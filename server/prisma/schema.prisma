@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  holdings      Holding[]
+  userDividends UserDividend[]
+  settings      UserSettings?
+  portfolios    Portfolio[]
+}
+
+model UserSettings {
+  id        Int    @id @default(autoincrement())
+  userId    Int    @unique
+  user      User   @relation(fields: [userId], references: [id])
+  darkMode  Boolean @default(true)
+  currency  String  @default("PKR")
+}
+
+model Portfolio {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  name      String
+  holdings  Holding[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Holding {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  portfolioId   Int?
+  portfolio     Portfolio?  @relation(fields: [portfolioId], references: [id])
+  symbol        String
+  quantity      Float
+  avgCost       Float
+  purchaseDate  DateTime
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  userDividends UserDividend[]
+}
+
+model Company {
+  id              Int           @id @default(autoincrement())
+  symbol          String        @unique
+  name            String
+  sector          String?
+  website         String?
+  ceo             String?
+  registrar       String?
+  auditor         String?
+  sharesOutstanding Float?
+  freeFloat       Float?
+  marketCap       Float?
+  pe              Float?
+  pb              Float?
+  eps             Float?
+  dividendYield   Float?
+  roe             Float?
+  revenue         Float?
+  profitAfterTax  Float?
+  currentPrice    Float?
+  dayChange       Float?
+  dayChangePercent Float?
+  week52High      Float?
+  week52Low       Float?
+  ytdChange       Float?
+  year1Change     Float?
+  lastUpdated     DateTime?
+  priceHistory    PriceHistory[]
+  dividends       Dividend[]
+}
+
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id])
+  date      DateTime
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float
+
+  @@unique([companyId, date])
+}
+
+model Dividend {
+  id           Int            @id @default(autoincrement())
+  companyId    Int
+  company      Company        @relation(fields: [companyId], references: [id])
+  exDate       DateTime
+  amount       Float
+  declaredDate DateTime?
+  paymentDate  DateTime?
+  userDividends UserDividend[]
+
+  @@unique([companyId, exDate])
+}
+
+model UserDividend {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  holdingId       Int
+  holding         Holding  @relation(fields: [holdingId], references: [id])
+  dividendId      Int
+  dividend        Dividend @relation(fields: [dividendId], references: [id])
+  sharesAtExDate  Float
+  amountReceived  Float
+  reinvested      Boolean  @default(false)
+  sharesAdded     Float?   @default(0)
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, holdingId, dividendId])
+}
+
+model IndexRecord {
+  id        Int      @id @default(autoincrement())
+  name      String
+  value     Float
+  change    Float?
+  changePercent Float?
+  date      DateTime
+
+  @@unique([name, date])
+}
+
+model MutualFund {
+  id        Int      @id @default(autoincrement())
+  name      String
+  category  String?
+  nav       Float
+  dayChange Float?
+  dayChangePercent Float?
+  date      DateTime
+
+  @@unique([name, date])
+}
