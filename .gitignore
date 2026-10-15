@@ -13,8 +13,10 @@
 
 # Logs and local editor state
 *.log
+*.log.*
 npm-debug.log*
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
@@ -24,5 +26,8 @@ server/generated/prisma/
 
 # Local database files
 *.db
+*.db-journal
 *.sqlite
+*.sqlite-journal
 *.sqlite3
+*.sqlite3-journal
