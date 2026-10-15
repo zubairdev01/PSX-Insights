@@ -10,21 +10,64 @@ import Skeleton from "../components/Skeleton";
 
 const emptyForm = { symbol: "", quantity: "", avgCost: "", purchaseDate: "", notes: "" };
 
+const toCsvCell = (value) => {
+  const text = String(value ?? "");
+  const safeText = typeof value === "string" && /^[\t\r ]*[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replaceAll('"', '""')}"`;
+};
+
 export default function PortfolioPage() {
   const [holdings, setHoldings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
-  const loadHoldings = () => {
-    api.get("/portfolio").then((res) => {
+  const loadHoldings = async () => {
+    setLoadError("");
+    try {
+      const res = await api.get("/portfolio");
       setHoldings(res.data);
+    } catch {
+      setLoadError("Could not load your portfolio. Please try again.");
+    } finally {
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }
   };
 
   useEffect(() => { loadHoldings(); }, []);
+
+  const exportHoldings = () => {
+    const columns = [
+      ["Symbol", "symbol"],
+      ["Quantity", "quantity"],
+      ["Average Cost (PKR)", "avgCost"],
+      ["Current Price (PKR)", "currentPrice"],
+      ["Market Value (PKR)", "marketValue"],
+      ["Cost Basis (PKR)", "costBasis"],
+      ["Unrealized P&L (PKR)", "unrealizedPnl"],
+      ["Unrealized P&L (%)", "unrealizedPnlPercent"],
+      ["Day Change (%)", "dayChangePercent"],
+      ["Purchase Date", "purchaseDate"],
+      ["Notes", "notes"],
+    ];
+    const rows = [
+      columns.map(([label]) => label),
+      ...holdings.map((holding) =>
+        columns.map(([, key]) => key === "purchaseDate"
+          ? holding[key]?.split("T")[0] || ""
+          : holding[key])
+      ),
+    ];
+    const csv = `\uFEFF${rows.map((row) => row.map(toCsvCell).join(",")).join("\r\n")}`;
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "psx-portfolio.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -77,10 +120,22 @@ export default function PortfolioPage() {
           <h1>Portfolio</h1>
           <p>Manage your holdings</p>
         </div>
-        <Button variant="primary" onClick={() => { resetForm(); setShowForm(true); }}>
-          + Add Holding
-        </Button>
+        <div style={{ display: "flex", gap: 12 }}>
+          {holdings.length > 0 && (
+            <Button onClick={exportHoldings}>Export CSV</Button>
+          )}
+          <Button variant="primary" onClick={() => { resetForm(); setShowForm(true); }}>
+            + Add Holding
+          </Button>
+        </div>
       </div>
+
+      {loadError && (
+        <div role="alert" style={{ color: "var(--red)", marginBottom: 16 }}>
+          {loadError}{" "}
+          <button className="btn-icon" onClick={loadHoldings}>Retry</button>
+        </div>
+      )}
 
       <Modal open={showForm} onClose={resetForm} title={editTarget ? "Edit Holding" : "New Holding"}>
         <form onSubmit={handleSubmit}>
