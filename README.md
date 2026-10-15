@@ -1,3 +1,4 @@
+<img width="590" height="296" alt="Screenshot 2026-10-15 131340" src="https://github.com/user-attachments/assets/50c61bc4-2c35-4c4d-8f35-422f2442b4ab" />
 # 📈 PSX Insight
 
 **A Full-Stack Pakistan Stock Exchange Research & Portfolio Management Platform**
