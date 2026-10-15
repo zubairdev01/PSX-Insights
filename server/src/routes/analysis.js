@@ -97,11 +97,45 @@ Dividend Yield: ${company.dividendYield}
 }
 
 async function callLLM(prompt) {
-  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return { error: "No API key configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env" };
+  const configuredProvider = process.env.AI_PROVIDER?.toLowerCase();
+  if (configuredProvider === "ollama") {
+    const baseUrl = (process.env.OLLAMA_BASE_URL || "http://localhost:11434").replace(/\/+$/, "");
+    const response = await fetch(`${baseUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: process.env.OLLAMA_MODEL || "qwen2.5:7b",
+        stream: false,
+        format: "json",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!response.ok) {
+      const error = new Error(`Ollama request failed (${response.status}): ${await response.text()}`);
+      error.status = 502;
+      throw error;
+    }
+    const data = await response.json();
+    if (typeof data.message?.content !== "string" || !data.message.content.trim()) {
+      const error = new Error("Ollama returned an empty or invalid response");
+      error.status = 502;
+      throw error;
+    }
+    return JSON.parse(data.message.content);
   }
-  const useAnthropic = !process.env.OPENAI_API_KEY;
+  if (configuredProvider && !["openai", "anthropic"].includes(configuredProvider)) {
+    const error = new Error(`Unsupported AI_PROVIDER "${configuredProvider}". Use ollama, openai, or anthropic.`);
+    error.status = 503;
+    throw error;
+  }
+  const useAnthropic = configuredProvider === "anthropic" ||
+    (!configuredProvider && !process.env.OPENAI_API_KEY);
+  const apiKey = useAnthropic ? process.env.ANTHROPIC_API_KEY : process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    const error = new Error(`Missing ${useAnthropic ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY"} for the selected AI provider`);
+    error.status = 503;
+    throw error;
+  }
   if (useAnthropic) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

@@ -34,6 +34,7 @@ The project combines an interactive React dashboard with a Node.js backend to pr
 - Generate AI-assisted company summaries.
 - Explore projected price scenarios.
 - Review potential risks using available company fundamentals.
+- Run analysis with a local open-weight model through Ollama, or configure OpenAI or Anthropic.
 
 *AI-generated analysis is informational and should not be treated as guaranteed predictions or personalized financial advice.*
 
@@ -61,7 +62,7 @@ The project combines an interactive React dashboard with a Node.js backend to pr
 | Prisma | Database ORM |
 | PostgreSQL | Relational database |
 | JWT | Authentication |
-| OpenAI / Anthropic API | AI-powered analysis, depending on configuration |
+| Ollama (local open-weight model) / OpenAI / Anthropic | AI-powered analysis, depending on configuration |
 
 ## 🏗️ Architecture
 
@@ -70,7 +71,7 @@ PSX Insight follows a client-server architecture.
 - **Frontend:** React application for the dashboard, stock screener, portfolio, and company profiles.
 - **Backend:** Express API for authentication, company data, portfolio operations, dividends, and analysis.
 - **Database:** PostgreSQL accessed through Prisma.
-- **AI integration:** Configurable AI provider for supported stock-analysis features.
+- **AI integration:** Configurable Ollama, OpenAI, or Anthropic provider for supported stock-analysis features. Ollama can run a model locally without sending prompts to a hosted AI API.
 
 ## 🚀 Getting Started
 
@@ -83,7 +84,7 @@ Make sure you have the following installed:
 - PostgreSQL
 - Git
 
-You will also need the appropriate API credentials for any external market-data or AI services used by the application.
+For local AI analysis, install [Ollama](https://ollama.com/) and download a compatible model, for example `qwen2.5:7b`. OpenAI or Anthropic credentials are only needed if you choose one of those hosted providers.
 
 ### 1. Clone the repository
 
@@ -123,6 +124,16 @@ JWT_SECRET="replace-with-a-secure-secret"
 ```
 
 Add any additional AI-provider and market-data API keys required by your implementation.
+
+To use the local Ollama provider, start Ollama, pull a model, then set these backend variables:
+
+```env
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+```
+
+Download the example model with `ollama pull qwen2.5:7b`. To use a hosted provider instead, set `AI_PROVIDER=openai` with `OPENAI_API_KEY`, or `AI_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`. If `AI_PROVIDER` is omitted, the server selects OpenAI when its key is configured, otherwise Anthropic when its key is configured.
 
 If the frontend uses a configured backend URL, set its corresponding Vite environment variable, following the name expected by your source code.
 
@@ -212,6 +223,8 @@ Always verify financial information using reliable sources and conduct independe
 ## 📄 License
 
 No license has been specified yet. Add a `LICENSE` file if you intend to make the project available for reuse or contributions under specific terms.
+
+The project can use open-weight models locally through Ollama; this is an optional AI provider, not a claim that every model or dependency has the same license. Check the license and terms for the specific model and third-party services you use. The project repository itself currently has no license specified.
 
 ---
 
